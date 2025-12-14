@@ -15,7 +15,7 @@ pipeline {
 
         stage('Git') {
             steps {
-                git branch: 'main', url: 'https://github.com/amine1azizi/mavenProject.git'
+                git branch: 'main', url: 'https://github.com/amine1azizi/devops.git'
             }
         }
 
