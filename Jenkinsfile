@@ -1,60 +1,40 @@
 pipeline {
     agent any
 
-    // ADDED: From your new file (runs every 5 mins)
-    triggers {
-        cron('H/5 * * * *')
-    }
-
-    // ADDED: From your new file (stops build if stuck for 1 hour)
-    options {
-        timeout(time: 1, unit: 'HOURS')
-    }
-
     tools {
-        // KEPT OLD: We use the names that worked for you ('MAVEN_HOME', 'JDK17')
-        // If you change these to 'maven3', your build might break if Jenkins doesn't know that name.
         maven 'MAVEN_HOME'
         jdk 'JDK17'
     }
 
     environment {
-        // KEPT OLD: Sonar credentials
         SONAR_HOST_URL = "http://localhost:9000"
         SONAR_TOKEN = credentials("sonar-token")
-        
-        // ADDED: From your new file
-        APP_ENV = "DEV"
     }
 
     stages {
 
-        stage('Code Checkout') {
+        stage('Git') {
             steps {
-                echo "=====Checking out code from Git====="
-                // UPDATED: usage of 'checkout scm' is better than hardcoding the URL.
-                // This allows the Jenkins Job Configuration to decide which Repo to use.
-                checkout scm
+                git branch: 'main', url: 'https://github.com/amine1azizi/mavenProject.git'
             }
         }
 
         stage('Build') {
             steps {
-                echo "=====Building Spring Boot application====="
+                // Compile + package jar, skip tests for now
                 sh 'mvn clean package -DskipTests'
             }
         }
 
         stage('Test') {
             steps {
-                // KEPT OLD: It is good practice to keep your tests!
+                // Run tests separately
                 sh 'mvn test'
             }
         }
 
         stage('Sonar') {
             steps {
-                // KEPT OLD: SonarQube analysis
                 sh """
                     mvn sonar:sonar \
                     -Dsonar.projectKey=MyProject \
@@ -69,23 +49,17 @@ pipeline {
         always {
             echo "Pipeline finished."
 
-            // KEPT OLD: JUnit reports
+            // Publish test reports if any
             script {
                 if (fileExists('target/surefire-reports')) {
                     junit 'target/surefire-reports/*.xml'
+                } else {
+                    echo "No test reports found."
                 }
             }
 
-            // MERGED: Archive artifacts with 'fingerprint: true' from new file
-            archiveArtifacts artifacts: 'target/*.jar', allowEmptyArchive: false, fingerprint: true
-        }
-        
-        // ADDED: From your new file
-        success {
-            echo "=====pipeline executed successfully ====="
-        }
-        failure {
-            echo "======pipeline execution failed======"
+            // Archive the jar artifact
+            archiveArtifacts artifacts: 'target/*.jar', allowEmptyArchive: false
         }
     }
 }
