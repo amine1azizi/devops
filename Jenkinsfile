@@ -9,10 +9,10 @@ pipeline {
     environment {
         SONAR_HOST_URL = "http://localhost:9000"
         SONAR_TOKEN = credentials("sonar-token")
+        TO_EMAIL = "capoamine44@gmail.com" 
     }
 
     stages {
-
         stage('Git') {
             steps {
                 git branch: 'main', url: 'https://github.com/amine1azizi/devops.git'
@@ -21,14 +21,12 @@ pipeline {
 
         stage('Build') {
             steps {
-                // Compile + package jar, skip tests for now
                 sh 'mvn clean package -DskipTests'
             }
         }
 
         stage('Test') {
             steps {
-                // Run tests separately
                 sh 'mvn test'
             }
         }
@@ -48,18 +46,28 @@ pipeline {
     post {
         always {
             echo "Pipeline finished."
-
-            // Publish test reports if any
+            
+            // JUnit Reports
             script {
                 if (fileExists('target/surefire-reports')) {
                     junit 'target/surefire-reports/*.xml'
-                } else {
-                    echo "No test reports found."
                 }
             }
-
-            // Archive the jar artifact
+            
+            // Archive Jar
             archiveArtifacts artifacts: 'target/*.jar', allowEmptyArchive: false
+        }
+
+        success {
+            mail to: "${TO_EMAIL}",
+                 subject: "SUCCESS: Pipeline ${currentBuild.fullDisplayName}",
+                 body: "Great job! The build was successful.\nCheck console: ${env.BUILD_URL}"
+        }
+
+        failure {
+            mail to: "${TO_EMAIL}",
+                 subject: "FAILURE: Pipeline ${currentBuild.fullDisplayName}",
+                 body: "Something went wrong.\nCheck console: ${env.BUILD_URL}"
         }
     }
 }
