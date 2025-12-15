@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: spring-app
-        image: amineazizi/devops:latest
+        image: amineazizi/devops-project:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
